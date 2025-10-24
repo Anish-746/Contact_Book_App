@@ -7,7 +7,7 @@ const Header = ({ onAddClick }) => {
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Contact List</h1>
+            <h1 className="text-3xl font-bold">Contact Book</h1>
             <p className="text-blue-100 mt-1">Manage your contacts effortlessly</p>
           </div>
           <button
