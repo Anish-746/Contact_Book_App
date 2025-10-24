@@ -3,9 +3,9 @@ import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import ContactList from './components/ContactList';
 import AddContact from './components/AddContact';
-import Modal from './utilities/Modal.jsx';
-import Toast from './utilities/Toast.jsx';
-import { X, Trash2 } from 'lucide-react';
+import ConfirmDelete from './components/ConfirmDelete.jsx';
+import Modal from './utils/Modal.jsx';
+import Toast from './utils/Toast.jsx';
 import { initialContacts } from './data.js';
 
 const STORAGE_KEY = 'list_app_contacts';
@@ -21,10 +21,10 @@ const App = () => {
     }  
 });
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingContactId, setDeletingContactId] = useState(null);
+  const [modal, setModal] = useState({
+    type: null,
+    payload: null
+  });
   const [toast, setToast] = useState(null);
 
   const filteredContacts = contacts.filter(contact =>
@@ -41,22 +41,18 @@ const App = () => {
     }
   }, [contacts]);
 
-  const handleAddContact = (formData) => {
-    const newContact = {
-      id: Date.now(),
-      ...formData
-    };
-    setContacts([...contacts, newContact]);
-    setIsModalOpen(false);
-    setToast({ message: 'Contact added successfully!', type: 'success' });
-  };
-
-  const handleEditContact = (formData) => {
-    setContacts(contacts.map(c =>
-      c.id === editingContact.id ? { ...c, ...formData } : c
-    ));
-    setIsModalOpen(false);
-    setEditingContact(null);
+  const handleFormSubmit = (formData) => {
+    if (modal.type === 'edit') {
+      setContacts(contacts.map(c =>
+        c.id === modal.payload.id ? { ...c, ...formData } : c
+      ));
+      setToast({ message: 'Contact updated successfully!', type: 'success' });
+    } else {
+      const newContact = { id: Date.now(), ...formData };
+      setContacts([...contacts, newContact]);
+      setToast({ message: 'Contact added successfully!', type: 'success' });
+    }
+    closeModal();
   };
 
   const handleDeleteContact = (id) => {
@@ -65,30 +61,17 @@ const App = () => {
   };
 
   const confirmDelete = () => {
-    setContacts(contacts.filter(c => c.id !== deletingContactId));
-    setIsDeleteModalOpen(false);
-    setDeletingContactId(null);
+    setContacts(contacts.filter(c => c.id !== modal.payload));
     setToast({ message: 'Contact deleted successfully!', type: 'success' });
+    closeModal();
   };
 
-  const cancelDelete = () => {
-    setIsDeleteModalOpen(false);
-    setDeletingContactId(null);
-  };
-
-  const openAddModal = () => {
-    setEditingContact(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (contact) => {
-    setEditingContact(contact);
-    setIsModalOpen(true);
+  const openModal = (type, payload = null) => {
+    setModal({ type, payload });
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingContact(null);
+    setModal({ type: null, payload: null });
   };
 
   return (
@@ -101,68 +84,30 @@ const App = () => {
         />
       )}
 
-      <Header onAddClick={openAddModal} />
+      <Header onAddClick={() => openModal('add')} />
       <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       
       <main className="container mx-auto px-4 pb-12">
         <ContactList
           contacts={filteredContacts}
-          onEdit={openEditModal}
-          onDelete={handleDeleteContact}
+          onEdit={(contact) => openModal('edit', contact)}
+          onDelete={(id) => openModal('delete', id)}
         />
       </main>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal isOpen={modal.type === 'add' || modal.type === 'edit'} onClose={closeModal}>
         <AddContact
-          contact={editingContact}
-          onSubmit={editingContact ? handleEditContact : handleAddContact}
+          contact={modal.payload}
+          onSubmit={handleFormSubmit}
           onCancel={closeModal}
         />
       </Modal>
 
-      <Modal isOpen={isDeleteModalOpen} onClose={cancelDelete}>
-        <div>
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800">Delete Contact</h2>
-            <button
-              onClick={cancelDelete}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X size={24} className="text-gray-500" />
-            </button>
-          </div>
-          
-          <div className="p-4">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <Trash2 size={24} className="text-red-600" />
-              </div>
-              <div>
-                <p className="text-gray-700 text-lg">
-                  Are you sure you want to delete this contact?
-                </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  This action cannot be undone.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
-            <button
-              onClick={cancelDelete}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmDelete}
-              className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all shadow-md hover:shadow-lg"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
+      <Modal isOpen={modal.type === 'delete'} onClose={closeModal}>
+        <ConfirmDelete
+          onClose={closeModal}
+          onConfirm={confirmDelete}
+        />
       </Modal>
     </div>
   );
