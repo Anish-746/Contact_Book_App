@@ -6,9 +6,7 @@ The UI is built with **Tailwind CSS** for a modern, utility-first design and **L
 
 ## Live Demo
 
-**[Link to your deployed application]** (e.g., `https://contact-book-app-bay.vercel.app/`)
-
----
+Vercel Link : **https://contact-book-app-bay.vercel.app/**
 
 ## Features
 
